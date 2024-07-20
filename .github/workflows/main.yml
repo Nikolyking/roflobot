@@ -19,7 +19,9 @@ jobs:
         ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
     - name: connect and pull
       run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} && git pull && exit"
+    - name: build new docker image
+      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && docker build -t ${{ secrets.IMAGE_NAME }} ."
     - name: restart roflobot container
-      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker stop ${{ secrets.CONTAINER_NAME }} || true && docker rm ${{ secrets.CONTAINER_NAME }} || true && docker run -d --name ${{ secrets.CONTAINER_NAME }} --restart always roflobot"
+      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker stop ${{ secrets.CONTAINER_NAME }} || true && docker rm ${{ secrets.CONTAINER_NAME }} || true && docker run -d --name ${{ secrets.CONTAINER_NAME }} --restart always ${{ secrets.IMAGE_NAME }}"
     - name: cleanup
       run: rm -rf ~/.ssh
