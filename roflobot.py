@@ -114,7 +114,7 @@ def send_welcome(message):
     user_name = message.from_user.username
     logger.info(f"Received /start command from user @{user_name}")
     bot.send_message(message.chat.id, """\
-Салам алейкум, мужчины! Я здесь исключительно для жесточайших рофлов и смешных реакций. Напиши /help, чтобы увидеть мои настоящие возможности. Текст для теста. Потом удалить
+Салам алейкум, мужчины! Я здесь исключительно для жесточайших рофлов и смешных реакций. Напиши /help, чтобы увидеть мои настоящие возможности.
 """)
 
 @bot.message_handler(commands=['help'])
