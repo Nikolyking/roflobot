@@ -23,6 +23,28 @@ def get_user_display_name(user):
         return f"@{user.username}"
     else:
         return user.first_name
+
+def compliment():
+
+    url = "https://love.romanticcollection.ru/blog/500-trogatelnyh-komplimentov-devushke/"
+    headers = {
+        "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    }
+
+    response = requests.get(url, headers=headers)
+    response.encoding = 'utf-8'
+    
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Find all `li` elements under the `ol` with class `wp-block-list`
+    compliments = soup.select('ol.wp-block-list li')
+
+    messages = []
+    for compliment in compliments:
+        message = compliment.get_text(strip=True)
+        messages.append(message)
+        
+    return messages
     
 def get_crypto_pairs(message):
     # Get crypto prices and percentage change
@@ -129,10 +151,20 @@ def send_help(message):
 /menu - показать меню бота \n
 /sticker - вызвать рандомный стикер \n
 /man - собрать Билли \n
+/compliment - прислать рандомный комплимент \n                   
 /billy + текст запроса - вызвать Билли-бота \n\n
 По вопросам обращаться к создателю
 """)
-    
+
+@bot.message_handler(commands=['compliment'])
+def send_compliment(message):
+    user_name = message.from_user.username
+    logger.info(f"Received /compliment command from user @{user_name}")
+    compliments = compliment()
+    text = random.choices(compliments)[0]
+    bot.send_message(message.chat.id, text)
+    logger.info(f"Sent {text} to user @{user_name}")
+
 @bot.message_handler(commands=['billy'])
 def call_llm_api(message):
     try:
@@ -222,7 +254,8 @@ def menu(message):
     button1 = types.InlineKeyboardButton('Курсы криптовалют', callback_data='crypto_menu')
     button2 = types.InlineKeyboardButton('Курсы валют', callback_data='currency_menu')
     button3 = types.InlineKeyboardButton('Погода', callback_data='weather')
-    keyboard.add(button1, button2, button3)
+    button4 = types.InlineKeyboardButton('Комплимент', callback_data='compliment')
+    keyboard.add(button1, button2, button3, button4)
 
     # Send message with a keyboard
     bot.send_message(message.chat.id, 'Текущий список функций: ', reply_markup=keyboard)
@@ -288,7 +321,10 @@ def callback_query(call):
         bot.send_message(call.message.chat.id, weather)   
     elif call.data =='Manchester':
         weather = check_weather('Манчестер')
-        bot.send_message(call.message.chat.id, weather)   
+        bot.send_message(call.message.chat.id, weather)
+
+    elif call.data == 'compliment':
+        send_compliment(call.message)
 
     elif call.data == 'back_to_main':
         menu(call.message)
