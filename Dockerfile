@@ -7,4 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["python", "roflobot.py"]
+CMD ["python", "main.py"]
