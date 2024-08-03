@@ -25,7 +25,8 @@ def call_llm_api(message, bot: TeleBot):
         # Call the OpenAI API
         completion = client_gpt.chat.completions.create(
             model="gpt-4o-mini",
-            messages=messages
+            messages=messages,
+            response_format={'type': 'text'}
         )
 
         # Get the response content
@@ -35,7 +36,7 @@ def call_llm_api(message, bot: TeleBot):
         logging.info(f"Response is: {response}")
 
         # Send the response back to the user
-        bot.send_message(message.chat.id, response)
+        bot.send_message(message.chat.id, response, parse_mode='Markdown')
         bot.send_sticker(message.chat.id, random.choice(sticker_ids_list))
 
     except Exception as e:
