@@ -8,6 +8,8 @@ from services.currency_service import get_currency_rate
 from services.weather_service import check_weather
 from services.gpt_service import call_llm_api
 from utils.bot_helpers import get_user_display_name, sticker_ids_list
+from services.youtube_service import get_video_info, download_video
+from telebot import types
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +115,58 @@ def setup_command_handlers(bot):
         bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEHAT5mmSH9RyYqkZEQv1d0CT8G88jKIwACVwAD4w02AleGFMLRveHgNQQ')
         bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEHAUBmmSH_8wh016RV7-Q-KnOWPfWCmgACWAAD4w02Aig3M5_g3MDhNQQ')
         bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEHAUJmmSIBZUFltLTclslEn0GN5Qy47QACWQAD4w02Al4ar6aidooaNQQ')
+
+    @bot.message_handler(commands=['youtube'])
+    def handle_youtube_command(message):
+        """
+        Handles the /youtube command to download a video.
+        """
+        url = message.text.split()[1] if len(message.text.split()) > 1 else None
+        if not url:
+            bot.send_message(message.chat.id, "Please provide a YouTube video URL after the /youtube command.")
+            return
+        
+        try:
+            video_info = get_video_info(url)
+            title = video_info["title"]
+            resolutions = video_info["resolutions"]
+
+            # Inline buttons for each resolution
+            keyboard = types.InlineKeyboardMarkup()
+            for res, itag in resolutions.items():
+                button = types.InlineKeyboardButton(res, callback_data=f"download_{itag}")
+                keyboard.add(button)
+
+            bot.send_message(message.chat.id, f"Choose a resolution to download '{title}':", reply_markup=keyboard)
+            # Store the URL in user data for later use
+            bot.user_data[message.chat.id] = url
+
+        except Exception as e:
+            bot.send_message(message.chat.id, f"An error occurred: {str(e)}")
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("download_"))
+    def handle_download_callback(call):
+        """
+        Handles the callback when a user selects a resolution for downloading.
+        """
+        itag = int(call.data.split("_")[1])
+        url = bot.user_data.get(call.message.chat.id)
+
+        if not url:
+            bot.send_message(call.message.chat.id, "Please provide a valid YouTube video URL using the /youtube command.")
+            return
+        
+        try:
+            file_path = download_video(url, itag)
+            
+            # Send the downloaded video file to the user
+            with open(file_path, "rb") as video:
+                bot.send_video(call.message.chat.id, video)
+
+            bot.send_message(call.message.chat.id, "Download complete!")
+
+        except Exception as e:
+            bot.send_message(call.message.chat.id, f"Failed to download the video: {str(e)}")
 
 def menu(bot, message):
     keyboard = types.InlineKeyboardMarkup(row_width=2)
